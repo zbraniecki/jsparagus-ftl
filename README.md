@@ -1,4 +1,4 @@
-== Synopsis ==
+# Synopsis
 
 This is an experiment of using `fluent-rs` lexer branch approach to parsing JavaScript.
 
@@ -12,7 +12,7 @@ just like `fluent-rs` does, and then get access to custom methods on the `Lexer`
 Generally speaking tho, this performance should be similar, for the given `simple` script,
 to what we could end up with for the runtime scenario.
 
-== Usage ==
+# Usage
 
 ```
 cargo run --bin lexer ./benches/simple.js
