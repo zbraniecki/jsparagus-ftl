@@ -9,6 +9,9 @@ The appoach is very POC level. Some decisions were made that will have to be rev
 using `Peekable` which makes the `Lexer` opaque. Instead, we could implement peeking inside of `Lexer`
 just like `fluent-rs` does, and then get access to custom methods on the `Lexer` like `take_if` etc.
 
+The Lexer is also stateless which won't likely cut it, and `fluent-rs` lexer is statefull, so we could adopt that once
+needed.
+
 Generally speaking tho, this performance should be similar, for the given `simple` script,
 to what we could end up with for the runtime scenario.
 
