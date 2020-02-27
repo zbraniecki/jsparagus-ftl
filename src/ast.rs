@@ -1,6 +1,6 @@
 #[derive(Debug, PartialEq)]
 pub struct Script<'s> {
-    pub statements: Box<[Statement<'s>]>
+    pub statements: Box<[Statement<'s>]>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -10,7 +10,8 @@ pub enum Statement<'s> {
 
 #[derive(Debug, PartialEq)]
 pub enum DeclarationKind {
-    Var
+    Var,
+    Let,
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,15 +33,15 @@ pub enum Binding<'s> {
 
 #[derive(Debug, PartialEq)]
 pub struct Identifier<'s> {
-    pub name: &'s str
+    pub name: &'s str,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum Expression<'s> {
-    LiteralString(LiteralString<'s>)
+    LiteralString(LiteralString<'s>),
 }
 
 #[derive(Debug, PartialEq)]
 pub struct LiteralString<'s> {
-    pub value: &'s str
+    pub value: &'s str,
 }

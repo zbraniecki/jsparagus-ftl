@@ -3,6 +3,7 @@ use std::ops::Range;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Var,
+    Let,
     Identifier(Range<usize>),
     EqSign,
     StringLiteral(Range<usize>),
@@ -47,10 +48,24 @@ impl<'l> Lexer<'l> {
         Token::Identifier(start..self.ptr)
     }
 
-    fn is_var(&mut self, b: &u8) -> bool {
-        b == &b'v' &&
-            self.source.get(self.ptr + 1) == Some(&b'a') &&
-            self.source.get(self.ptr + 2) == Some(&b'r')
+    fn maybe_get_decl_kind(&mut self, b: u8) -> Option<Token> {
+        match b {
+            b'v'
+                if self.source.get(self.ptr + 1) == Some(&b'a')
+                    && self.source.get(self.ptr + 2) == Some(&b'r') =>
+            {
+                self.ptr += 3;
+                Some(Token::Var)
+            }
+            b'l'
+                if self.source.get(self.ptr + 1) == Some(&b'e')
+                    && self.source.get(self.ptr + 2) == Some(&b't') =>
+            {
+                self.ptr += 3;
+                Some(Token::Let)
+            }
+            _ => None,
+        }
     }
 
     fn skip_inline_ws(&mut self) {
@@ -59,19 +74,19 @@ impl<'l> Lexer<'l> {
         }
     }
 
-    fn get_string_literal(&mut self, quote: &u8) -> LexerResult {
+    fn get_string_literal(&mut self, quote: u8) -> LexerResult {
         let start = self.ptr;
         let end;
         loop {
             match self.source.get(self.ptr) {
-                Some(b) if b == quote => {
+                Some(b) if *b == quote => {
                     end = self.ptr;
                     self.ptr += 1;
                     break;
-                },
+                }
                 None => {
                     return Err(LexerError::Unknown);
-                },
+                }
                 _ => {
                     self.ptr += 1;
                 }
@@ -98,24 +113,23 @@ impl<'l> Lexer<'l> {
                     }
                 }
                 Some(b) if b.is_ascii_alphabetic() => {
-                    if self.is_var(b) {
-                        self.ptr += 3;
-                        return Ok(Some(Token::Var));
+                    if let Some(token) = self.maybe_get_decl_kind(*b) {
+                        return Ok(Some(token));
                     } else {
                         return Ok(Some(self.get_ident()));
                     }
-                },
+                }
                 Some(b';') => {
                     self.ptr += 1;
                     return Ok(Some(Token::Semicolon));
-                },
+                }
                 Some(b'=') => {
                     self.ptr += 1;
                     return Ok(Some(Token::EqSign));
                 }
                 Some(quote @ b'"') => {
                     self.ptr += 1;
-                    return Ok(Some(self.get_string_literal(quote)?));
+                    return Ok(Some(self.get_string_literal(*quote)?));
                 }
                 Some(b'\n') => {
                     self.ptr += 1;
@@ -123,10 +137,8 @@ impl<'l> Lexer<'l> {
                 }
                 None => {
                     return Ok(None);
-                },
-                _ => {
-                    panic!("Unknown token!")
                 }
+                _ => panic!("Unknown token!"),
             }
         }
     }
@@ -150,6 +162,7 @@ impl<'l> Iterator for Lexer<'l> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.try_next().unwrap_or_else(|err| Some(Token::Error(err)))
+        self.try_next()
+            .unwrap_or_else(|err| Some(Token::Error(err)))
     }
 }

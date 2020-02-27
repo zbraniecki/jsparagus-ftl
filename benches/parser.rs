@@ -15,7 +15,7 @@ fn read_file(path: &str) -> Result<String, io::Error> {
 }
 
 fn parser_bench(c: &mut Criterion) {
-    let tests = &["simple"];
+    let tests = &["simple", "complex"];
 
     c.bench_function_over_inputs(
         "parser_bench",

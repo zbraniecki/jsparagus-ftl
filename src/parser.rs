@@ -50,7 +50,7 @@ impl<'p> Parser<'p> {
         }
 
         ast::Script {
-            statements: self.statements.into_boxed_slice()
+            statements: self.statements.into_boxed_slice(),
         }
     }
 
@@ -59,46 +59,49 @@ impl<'p> Parser<'p> {
             match self.lexer.next() {
                 Some(Token::Error(err)) => {
                     return Err(err.into());
-                },
-                Some(decl @ Token::Var) => {
+                }
+                Some(decl @ Token::Var) | Some(decl @ Token::Let) => {
                     self.add_statement(decl)?;
                     return Ok(true);
-                },
+                }
                 Some(Token::Eol) => {}
-                Some(t) => panic!("Unexpected Token: {:#?}", t),
                 None => {
                     return Ok(false);
+                }
+                _ => {
+                    return Err(ParserError::Unknown);
                 }
             }
         }
     }
 
     fn add_statement(&mut self, decl: Token) -> ParserResult<()> {
-        match decl {
-            Token::Var => {
-                let stmt = ast::Statement::VariableDeclaration(
-                        self.get_variable_declaration(ast::DeclarationKind::Var)?
-                );
-                self.statements.push(stmt);
-                Ok(())
-            },
-            _ => Err(ParserError::Unknown)
-        }
+        let kind = match decl {
+            Token::Var => ast::DeclarationKind::Var,
+            Token::Let => ast::DeclarationKind::Let,
+            _ => {
+                return Err(ParserError::Unknown);
+            }
+        };
+        let stmt = ast::Statement::VariableDeclaration(self.get_variable_declaration(kind)?);
+        self.statements.push(stmt);
+        Ok(())
     }
 
-    fn get_variable_declaration(&mut self, kind: ast::DeclarationKind) -> ParserResult<ast::VariableDeclaration<'p>> {
+    fn get_variable_declaration(
+        &mut self,
+        kind: ast::DeclarationKind,
+    ) -> ParserResult<ast::VariableDeclaration<'p>> {
         let mut declarators = vec![];
 
         loop {
             match self.lexer.peek() {
                 Some(Token::Error(err)) => {
                     return Err(err.into());
-                },
+                }
                 Some(Token::Identifier(_)) => {
-                    declarators.push(
-                        self.get_variable_declarator()?
-                    );
-                },
+                    declarators.push(self.get_variable_declarator()?);
+                }
                 _ => {
                     break;
                 }
@@ -111,13 +114,15 @@ impl<'p> Parser<'p> {
 
         Ok(ast::VariableDeclaration {
             kind,
-            declarators: declarators.into_boxed_slice()
+            declarators: declarators.into_boxed_slice(),
         })
     }
 
     fn get_variable_declarator(&mut self) -> ParserResult<ast::VariableDeclarator<'p>> {
         let ident = if let Some(Token::Identifier(r)) = self.lexer.next() {
-            ast::Identifier { name: &self.source[r] }
+            ast::Identifier {
+                name: &self.source[r],
+            }
         } else {
             return Err(ParserError::Unknown);
         };
@@ -136,7 +141,9 @@ impl<'p> Parser<'p> {
 
     fn maybe_get_expression(&mut self) -> ParserResult<Option<ast::Expression<'p>>> {
         if let Some(Token::StringLiteral(r)) = self.lexer.peek() {
-            let s = ast::LiteralString { value: &self.source[r.start..r.end] };
+            let s = ast::LiteralString {
+                value: &self.source[r.start..r.end],
+            };
             self.lexer.next();
             Ok(Some(ast::Expression::LiteralString(s)))
         } else {
